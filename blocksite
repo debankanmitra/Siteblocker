@@ -1,0 +1,54 @@
+#!/bin/bash
+
+
+# Define the domain name you want to block
+domain="${2}"
+
+sudo systemctl start atd
+
+# Add the domain entry to /etc/hosts
+if [[ "${1}" = "block" ]]
+then
+	echo "127.0.0.1   $domain" | sudo tee -a /etc/hosts
+	
+	
+	sudo systemctl restart NetworkManager
+
+	
+	sleep 4
+	
+	# Filepath 
+	Filepath="/etc/hosts"
+	# Lock the hosts file
+	echo "Locking the hosts file..."
+	sudo chmod 000 $Filepath
+	sudo chattr +i $Filepath  # Set the immutable attribute
+	
+	
+	# Schedule the unlocking using 'at' command
+   	echo "sudo chattr -i $Filepath && sudo chmod 644 $Filepath" | at -M now + 2 minutes
+	
+fi
+
+# Remove the domain entry from /etc/hosts
+if [[ "${1}" = "unblock" ]]
+then
+	sed -i "/$domain/d" /etc/hosts
+	if [ $? -ne 0 ]; then
+    		echo "Error persmission failed , wait till unlocking time."
+   		exit 1
+	fi
+	sudo systemctl restart NetworkManager
+	
+	sleep 4
+	
+	sudo systemctl stop atd
+	echo "Domain $domain is now accessible"
+fi
+
+# To apply the changes immediately, flush the DNS cache. 
+# The process may vary depending on your Linux distribution. 
+echo "Restarting NetworkManager..."
+#sudo systemctl restart NetworkManager
+
+exit 0
