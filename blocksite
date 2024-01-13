@@ -4,21 +4,29 @@
 # Define the domain name you want to block
 domain="${2}"
 
+# Define the time to block the domain
+time="${3}"
+
+# Start the atd service
 sudo systemctl start atd
 
 # Add the domain entry to /etc/hosts
 if [[ "${1}" = "block" ]]
 then
+	# Add the domain entry to /etc/hosts
 	echo "127.0.0.1   $domain" | sudo tee -a /etc/hosts
-	
-	
+	echo "::1         $domain" | sudo tee -a /etc/hosts
+
+	# Restart NetworkManager
+	echo "Restarting NetworkManager..."
 	sudo systemctl restart NetworkManager
 
-	
+	# Wait for 4 seconds
 	sleep 4
 	
 	# Filepath 
 	Filepath="/etc/hosts"
+
 	# Lock the hosts file
 	echo "Locking the hosts file..."
 	sudo chmod 000 $Filepath
@@ -26,7 +34,7 @@ then
 	
 	
 	# Schedule the unlocking using 'at' command
-   	echo "sudo chattr -i $Filepath && sudo chmod 644 $Filepath" | at -M now + 2 minutes
+   	echo "sudo chattr -i $Filepath && sudo chmod 644 $Filepath" | at -M now + $time minutes
 	
 fi
 
@@ -46,9 +54,5 @@ then
 	echo "Domain $domain is now accessible"
 fi
 
-# To apply the changes immediately, flush the DNS cache. 
-# The process may vary depending on your Linux distribution. 
-echo "Restarting NetworkManager..."
-#sudo systemctl restart NetworkManager
 
 exit 0
